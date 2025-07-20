@@ -1,4 +1,11 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+import os
+os.makedirs('visuals', exist_ok=True)
+
 
 # Seasons to load (folder names in the URLs)
 seasons = [
@@ -32,5 +39,62 @@ for season in seasons:
 # Concatenate all DataFrames
 big_df = pd.concat(all_dfs, ignore_index=True)
 
-# Quick check
-print(big_df[["Season", "Date"]].head())
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 📊 Goals Scored per Team per Season (Top 6 Teams)
+top_teams = ['Man City', 'Man United', 'Liverpool', 'Chelsea', 'Arsenal', 'Tottenham']
+
+# Aggregate home and away goals
+home_goals = big_df.groupby(['Season', 'HomeTeam'])['FTHG'].sum().reset_index()
+away_goals = big_df.groupby(['Season', 'AwayTeam'])['FTAG'].sum().reset_index()
+
+# Rename columns
+home_goals.rename(columns={'HomeTeam': 'Team', 'FTHG': 'Goals'}, inplace=True)
+away_goals.rename(columns={'AwayTeam': 'Team', 'FTAG': 'Goals'}, inplace=True)
+
+# Combine and group
+total_goals = pd.concat([home_goals, away_goals])
+total_goals = total_goals.groupby(['Season', 'Team'])['Goals'].sum().reset_index()
+
+# Filter for top teams
+top_goals = total_goals[total_goals['Team'].isin(top_teams)]
+
+# Plot
+plt.figure(figsize=(14, 8))
+sns.lineplot(data=top_goals, x='Season', y='Goals', hue='Team', marker='o')
+plt.title('Goals Scored per Season (Top 6 Teams)', fontsize=16)
+plt.xticks(rotation=45)
+plt.ylabel('Goals Scored')
+plt.xlabel('Season')
+plt.tight_layout()
+plt.savefig('visuals/goals_scored_top6_per_season.png')
+plt.close()
+
+
+# 📊 Goals Conceded per Team per Season (Top 6 Teams)
+home_conceded = big_df.groupby(['Season', 'AwayTeam'])['FTHG'].sum().reset_index()
+away_conceded = big_df.groupby(['Season', 'HomeTeam'])['FTAG'].sum().reset_index()
+
+home_conceded.rename(columns={'AwayTeam': 'Team', 'FTHG': 'GoalsConceded'}, inplace=True)
+away_conceded.rename(columns={'HomeTeam': 'Team', 'FTAG': 'GoalsConceded'}, inplace=True)
+
+total_conceded = pd.concat([home_conceded, away_conceded])
+total_conceded = total_conceded.groupby(['Season', 'Team'])['GoalsConceded'].sum().reset_index()
+
+# Filter for top teams
+top_conceded = total_conceded[total_conceded['Team'].isin(top_teams)]
+
+# Plot
+plt.figure(figsize=(14, 8))
+sns.lineplot(data=top_conceded, x='Season', y='GoalsConceded', hue='Team', marker='o')
+plt.title('Goals Conceded per Season (Top 6 Teams)', fontsize=16)
+plt.xticks(rotation=45)
+plt.ylabel('Goals Conceded')
+plt.xlabel('Season')
+plt.tight_layout()
+plt.savefig('visuals/goals_conceded_top6_per_season.png')
+plt.close()
+
+
