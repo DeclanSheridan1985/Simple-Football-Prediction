@@ -40,10 +40,7 @@ for season in seasons:
 big_df = pd.concat(all_dfs, ignore_index=True)
 
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-# 📊 Goals Scored per Team per Season (Top 6 Teams)
+# Issue 3 Goals Scored per Team per Season (Top 6 Teams)
 top_teams = ['Man City', 'Man United', 'Liverpool', 'Chelsea', 'Arsenal', 'Tottenham']
 
 # Aggregate home and away goals
@@ -73,7 +70,7 @@ plt.savefig('visuals/goals_scored_top6_per_season.png')
 plt.close()
 
 
-# 📊 Goals Conceded per Team per Season (Top 6 Teams)
+# Issue 3 Goals Conceded per Team per Season (Top 6 Teams)
 home_conceded = big_df.groupby(['Season', 'AwayTeam'])['FTHG'].sum().reset_index()
 away_conceded = big_df.groupby(['Season', 'HomeTeam'])['FTAG'].sum().reset_index()
 
@@ -98,3 +95,37 @@ plt.savefig('visuals/goals_conceded_top6_per_season.png')
 plt.close()
 
 
+# --- Issue 5 - Net Goals ---
+# --- Goals Scored ---
+home_goals = big_df.groupby(['Season', 'HomeTeam'])['FTHG'].sum().reset_index()
+away_goals = big_df.groupby(['Season', 'AwayTeam'])['FTAG'].sum().reset_index()
+home_goals.rename(columns={'HomeTeam': 'Team', 'FTHG': 'GoalsScored'}, inplace=True)
+away_goals.rename(columns={'AwayTeam': 'Team', 'FTAG': 'GoalsScored'}, inplace=True)
+total_goals = pd.concat([home_goals, away_goals])
+total_goals = total_goals.groupby(['Season', 'Team'])['GoalsScored'].sum().reset_index()
+
+# --- Goals Conceded ---
+home_conceded = big_df.groupby(['Season', 'AwayTeam'])['FTHG'].sum().reset_index()
+away_conceded = big_df.groupby(['Season', 'HomeTeam'])['FTAG'].sum().reset_index()
+home_conceded.rename(columns={'AwayTeam': 'Team', 'FTHG': 'GoalsConceded'}, inplace=True)
+away_conceded.rename(columns={'HomeTeam': 'Team', 'FTAG': 'GoalsConceded'}, inplace=True)
+total_conceded = pd.concat([home_conceded, away_conceded])
+total_conceded = total_conceded.groupby(['Season', 'Team'])['GoalsConceded'].sum().reset_index()
+
+# --- Combine to calculate Net Goals ---
+net_goals = pd.merge(total_goals, total_conceded, on=['Season', 'Team'])
+net_goals['NetGoals'] = net_goals['GoalsScored'] - net_goals['GoalsConceded']
+
+# Filter Top 6 Teams
+net_goals_top6 = net_goals[net_goals['Team'].isin(top_teams)]
+
+# Plot
+plt.figure(figsize=(14, 8))
+sns.lineplot(data=net_goals_top6, x='Season', y='NetGoals', hue='Team', marker='o')
+plt.title('Net Goals per Season (Top 6 Teams)', fontsize=16)
+plt.xticks(rotation=45)
+plt.ylabel('Net Goals (Scored - Conceded)')
+plt.xlabel('Season')
+plt.tight_layout()
+plt.savefig('visuals/net_goals_top6_per_season.png')
+plt.close()
