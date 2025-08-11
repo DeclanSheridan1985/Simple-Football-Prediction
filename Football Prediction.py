@@ -129,3 +129,43 @@ plt.xlabel('Season')
 plt.tight_layout()
 plt.savefig('visuals/net_goals_top6_per_season.png')
 plt.close()
+
+
+
+# 6 average goals per match
+# --- Top teams filter ---
+top_teams = ['Man City', 'Man United', 'Liverpool', 'Chelsea', 'Arsenal', 'Tottenham']
+
+# --- Goals scored per team per season ---
+home_goals = big_df.groupby(['Season', 'HomeTeam'])['FTHG'].sum().reset_index()
+away_goals = big_df.groupby(['Season', 'AwayTeam'])['FTAG'].sum().reset_index()
+home_goals.rename(columns={'HomeTeam': 'Team', 'FTHG': 'Goals'}, inplace=True)
+away_goals.rename(columns={'AwayTeam': 'Team', 'FTAG': 'Goals'}, inplace=True)
+total_goals = pd.concat([home_goals, away_goals])
+total_goals = total_goals.groupby(['Season', 'Team'])['Goals'].sum().reset_index()
+
+# --- Matches played per team per season ---
+home_matches = big_df.groupby(['Season', 'HomeTeam']).size().reset_index(name='Matches')
+away_matches = big_df.groupby(['Season', 'AwayTeam']).size().reset_index(name='Matches')
+home_matches.rename(columns={'HomeTeam': 'Team'}, inplace=True)
+away_matches.rename(columns={'AwayTeam': 'Team'}, inplace=True)
+total_matches = pd.concat([home_matches, away_matches])
+total_matches = total_matches.groupby(['Season', 'Team'])['Matches'].sum().reset_index()
+
+# --- Merge and calculate average goals per match ---
+avg_goals = pd.merge(total_goals, total_matches, on=['Season', 'Team'])
+avg_goals['AvgGoalsPerMatch'] = avg_goals['Goals'] / avg_goals['Matches']
+
+# --- Filter Top 6 teams ---
+avg_goals_top6 = avg_goals[avg_goals['Team'].isin(top_teams)]
+
+# --- Plot ---
+plt.figure(figsize=(14, 8))
+sns.lineplot(data=avg_goals_top6, x='Season', y='AvgGoalsPerMatch', hue='Team', marker='o')
+plt.title('Average Goals per Match per Season (Top 6 Teams)', fontsize=16)
+plt.xticks(rotation=45)
+plt.ylabel('Average Goals per Match')
+plt.xlabel('Season')
+plt.tight_layout()
+plt.savefig('visuals/avg_goals_per_match_top6.png')
+plt.close()
